@@ -13,3 +13,229 @@
         </body>
     </html>
 </html>
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>DIH SLOT</title>
+<style>
+  body {
+    background: #222;
+    font-family: Arial, sans-serif;
+    color: white;
+    text-align: center;
+  }
+
+  #tokens {
+    font-size: 26px;
+    margin-top: 10px;
+  }
+
+  #slot {
+    display: inline-grid;
+    grid-template-columns: repeat(5, 80px);
+    grid-template-rows: repeat(3, 80px);
+    gap: 6px;
+    margin-top: 20px;
+    perspective: 800px;
+  }
+
+  .cell {
+    background: #333;
+    border: 2px solid #555;
+    border-radius: 10px;
+    font-size: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, background 0.2s ease;
+  }
+
+  /* Spin animation */
+  .spinning {
+    animation: spinAnim 0.2s linear infinite;
+    background: #444;
+  }
+
+  @keyframes spinAnim {
+    0%   { transform: translateY(-10px) rotateX(20deg); }
+    50%  { transform: translateY(10px)  rotateX(-20deg); }
+    100% { transform: translateY(-10px) rotateX(20deg); }
+  }
+
+  button {
+    margin-top: 20px;
+    padding: 12px 30px;
+    font-size: 20px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+  }
+  
+  #winMessage {
+  margin-top: 15px;
+  font-size: 24px;
+  font-weight: bold;
+  color: #00ff80;
+  height: 30px;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+</style>
+</head>
+<body>
+
+<h1>DIH SLOT</h1>
+<div id="tokens">Raha: <span id="tokenCount">100</span></div> <!-- Default: 50 tokens -->
+
+<div id="slot"></div>
+<div id="winMessage"></div>
+<button onclick="spin()">SPIN (1 Raha)</button>
+
+
+<script>
+let tokens = 100;
+const tokenDisplay = document.getElementById("tokenCount");
+
+const symbols = ["🍒", "🍋", "🔔", "⭐", "🍀", "7️⃣"];
+
+// ---------------------
+//  RIGGING OPTIONS
+// ---------------------
+const RIGGED = false;
+
+const RIGGED_BOARD = [
+  ["7️⃣","7️⃣","7️⃣","7️⃣","7️⃣"],
+  ["⭐","⭐","⭐","⭐","⭐"],
+  ["🍒","🍒","🍒","🍒","🍒"]
+];
+// ---------------------
+
+function rngSymbol() {
+  return symbols[Math.floor(Math.random() * symbols.length)];
+}
+
+function generateBoard() {
+  if (RIGGED) return RIGGED_BOARD.map(row => [...row]);
+
+  const board = [];
+  for (let r = 0; r < 3; r++) {
+    board[r] = [];
+    for (let c = 0; c < 5; c++) {
+      board[r][c] = rngSymbol();
+    }
+  }
+  return board;
+}
+
+let spinning = false;
+
+function spin() {
+  if (spinning) return;
+
+  if (tokens < 1) {
+    alert("You're out of tokens!");
+    return;
+  }
+
+  spinning = true;
+  tokens -= 1;
+  tokenDisplay.textContent = tokens;
+
+  const slot = document.getElementById("slot");
+  const cells = [...slot.children];
+
+  cells.forEach(cell => cell.classList.add("spinning"));
+
+  const finalBoard = generateBoard();
+
+  for (let col = 0; col < 5; col++) {
+    setTimeout(() => {
+      stopColumn(col, finalBoard);
+
+      if (col === 4) {
+        setTimeout(() => {
+          checkWins(finalBoard);
+          spinning = false;
+        }, 400);
+      }
+
+    }, col * 300);
+  }
+}
+
+function stopColumn(col, finalBoard) {
+  const slot = document.getElementById("slot");
+  const cells = [...slot.children];
+
+  for (let row = 0; row < 3; row++) {
+    const index = row * 5 + col;
+    const cell = cells[index];
+
+    cell.classList.remove("spinning");
+
+    cell.style.transform = "scale(1.2)";
+    setTimeout(() => cell.style.transform = "scale(1)", 120);
+
+    cell.textContent = finalBoard[row][col];
+  }
+}
+
+// ---------------------
+//  WIN CHECKING LOGIC
+// ---------------------
+function checkWins(board) {
+  let totalWins = 0;
+
+  for (let r = 0; r < 3; r++) {
+    // check triples: 0-2, 1-3, 2-4
+    for (let c = 0; c <= 2; c++) {
+      const s = board[r][c];
+      if (board[r][c+1] === s && board[r][c+2] === s) {
+        totalWins++;
+      }
+    }
+  }
+
+  const winMessage = document.getElementById("winMessage");
+  
+  if (totalWins > 0) {
+    const reward = totalWins * 20;
+    tokens += reward;
+    tokenDisplay.textContent = tokens;
+
+    winMessage.textContent = `WIN! ${reward} €`;
+    winMessage.style.opacity = 1;
+
+    // fade out after 3 seconds
+    setTimeout(() => {
+      winMessage.style.opacity = 0;
+    }, 3000);
+
+  } else {
+    winMessage.textContent = "";
+    winMessage.style.opacity = 0;
+  }
+}
+
+
+// ---------------------
+
+function initBoard() {
+  const slot = document.getElementById("slot");
+  slot.innerHTML = "";
+  for (let i = 0; i < 15; i++) {
+    const div = document.createElement("div");
+    div.className = "cell spinning";
+    div.textContent = " ";
+    slot.appendChild(div);
+  }
+}
+
+initBoard();
+</script>
+
+</body>
+</html>
